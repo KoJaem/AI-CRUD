@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { signInWithKakao } from "./actions";
+import { signInWithKakao, signOut } from "./actions";
 
 export default function LoginPage() {
   return (
@@ -17,7 +17,7 @@ export default function LoginPage() {
           height={45}
         />
       </button>
-      {/* <button formAction={signOut}>Sign Out</button> */}
+      <button formAction={signOut}>Sign Out</button>
     </form>
   );
 }
