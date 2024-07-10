@@ -9,12 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^0.0.34",
+    "@hookform/resolvers": "^3.7.0",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.44.2",
     "ai": "^3.2.16",
     "next": "14.2.4",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-hook-form": "^7.52.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20",

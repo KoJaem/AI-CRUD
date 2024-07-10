@@ -24,8 +24,7 @@ export default async function TestSupabaseAuth() {
 
   return (
     <div className="flex flex-col items-center justify-center">
-      <h1 className='my-[20px]'>Supabase Auth</h1>
-
+      <h1 className="my-[20px]">Supabase Auth</h1>
       {data?.map(item => (
         <form
           className="w-full flex flex-col max-w-[1280px]"
