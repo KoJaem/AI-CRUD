@@ -50,6 +50,14 @@ const postTestAPI = async (
   };
 };
 
+// Todo 추 후 해당데이터가 있는지 확인 후 권한이 있는경우에 삭제 / 데이터가 없거나 권한이 없는경우 에러처리 해야함
+const deleteTestAPI = async (storeName: string) => {
+  await sleep(2000);
+  return {
+    title: storeName,
+  };
+};
+
 const LoadingComponent = () => (
   <div className="animate-pulse p-4">Loading...</div>
 );
@@ -65,11 +73,15 @@ A message inside means a UI element or user event. For example:
 
 "[Store Post = KoJaemMart]" means that you want to provide users with the function to create store for KoJaemMart.
 
+"[Store Delete = KoJaemMart]" means that you want to provide users the function to delete store for KoJaemMart.
+
 If the user wants information about all stores, call \`getAllStore\` to display the information.
 
 If the user wants detailed information about a particular store, call \`getDetailStore\` to display the details.
 
 If the user wants to create a store, first, receive the values storeName, description, content from the user. and call \`postStore\` to create the store.
+
+If a user wants to delete a store, first, receive the storeName value from the user and call \`deleteStore\` to delete the store.
 
 If a user wants information that isn't related to your store, then tell them not to ask questions that aren't related to your store.
 
@@ -79,7 +91,6 @@ In addition to getting store information, you can also chat with users.
 // Define the AI state and UI state types
 export type ServerMessage = {
   id?: number;
-  name?: "getAllStore" | "getDetailStore";
   role: "user" | "assistant" | "system";
   content: string;
 };
@@ -102,10 +113,6 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
       content: message,
     },
   ]);
-
-  console.log("message", message);
-
-  console.log("history", history);
 
   const reply = await streamUI({
     model: openai("gpt-3.5-turbo"),
@@ -161,7 +168,7 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         description:
           "Gets information about the specific store. Use it to provide users with specific store information.",
         parameters: z.object({
-          storeName: z.string().describe("The storeName is required."),
+          storeName: z.string().describe("The storeName of the store"),
         }),
         generate: async function* ({ storeName }: { storeName: string }) {
           yield <LoadingComponent />;
@@ -189,11 +196,11 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         description:
           "Creates a store. Use if the user wants to create a store.",
         parameters: z.object({
-          storeName: z.string().describe("The storeName is required."),
+          storeName: z.string().describe("The storeName of the store"),
           description: z
             .string()
-            .describe("The store description is required."),
-          content: z.string().describe("The store content is required."),
+            .describe("The store description of the store"),
+          content: z.string().describe("The store content of the store"),
         }),
         generate: async function* ({
           storeName,
@@ -206,9 +213,6 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         }) {
           yield <LoadingComponent />;
 
-          console.log("storeName", storeName);
-          console.log("description", description);
-          console.log("content", content);
           const store = await postTestAPI(storeName, description, content);
 
           const storeTitle = store.title;
@@ -227,11 +231,37 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
 
           return (
             <div>
-              <h1 className="text-[20px] font-bold">{storeTitle}</h1>
+              <h1 className="text-[20px] font-bold">{storeTitle}-생성됨</h1>
               <p>{storeDescription}</p>
               <p>{storeContent}</p>
             </div>
           );
+        },
+      },
+      deleteStore: {
+        description:
+          "Delete data for a specific store. Use if the user wants to delete a specific store.",
+        parameters: z.object({
+          storeName: z.string().describe("The storeName of the store"),
+        }),
+        generate: async function* ({ storeName }: { storeName: string }) {
+          yield <LoadingComponent />;
+
+          const store = await deleteTestAPI(storeName);
+
+          const storeTitle = store.title;
+
+          await sleep(1000);
+
+          history.done([
+            ...history.get(),
+            {
+              role: "assistant",
+              content: `[Store Delete = ${storeTitle}]`,
+            },
+          ]);
+
+          return <div>{storeTitle}-삭제됨</div>;
         },
       },
     },
