@@ -37,6 +37,19 @@ const getTestDetailAPI = async (storeName: string) => {
   };
 };
 
+const postTestAPI = async (
+  storeName: string,
+  description: string,
+  content: string
+) => {
+  await sleep(2000);
+  return {
+    title: storeName,
+    description: `${description}`,
+    content,
+  };
+};
+
 const LoadingComponent = () => (
   <div className="animate-pulse p-4">Loading...</div>
 );
@@ -46,13 +59,18 @@ You are a store information bot and you can help users find out details about st
 
 A message inside means a UI element or user event. For example:
 
-"[Store info = Walmart]" means that you want to show the user the information interface for Walmart.
+"[Store Info = KoJaemMart]" means that you want to show the user the information interface for KoJaemMart.
 
 "[Store List]" means that you want to display list data to provide users with overall store information.
+
+"[Store Post = KoJaemMart]" means that you want to provide users with the function to create store for KoJaemMart.
 
 If the user wants information about all stores, call \`getAllStore\` to display the information.
 
 If the user wants detailed information about a particular store, call \`getDetailStore\` to display the details.
+
+If the user wants to create a store, first, receive the values storeName, description, content from the user. and call \`postStore\` to create the store.
+
 If a user wants information that isn't related to your store, then tell them not to ask questions that aren't related to your store.
 
 In addition to getting store information, you can also chat with users.
@@ -84,6 +102,10 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
       content: message,
     },
   ]);
+
+  console.log("message", message);
+
+  console.log("history", history);
 
   const reply = await streamUI({
     model: openai("gpt-3.5-turbo"),
@@ -155,11 +177,61 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
             ...history.get(),
             {
               role: "assistant",
-              content: `[Store info = ${storeTitle}]`,
+              content: `[Store Info = ${storeTitle}]`,
             },
           ]);
 
           return <div>{storeDescription}</div>;
+        },
+      },
+
+      postStore: {
+        description:
+          "Creates a store. Use if the user wants to create a store.",
+        parameters: z.object({
+          storeName: z.string().describe("The storeName is required."),
+          description: z
+            .string()
+            .describe("The store description is required."),
+          content: z.string().describe("The store content is required."),
+        }),
+        generate: async function* ({
+          storeName,
+          description,
+          content,
+        }: {
+          storeName: string;
+          description: string;
+          content: string;
+        }) {
+          yield <LoadingComponent />;
+
+          console.log("storeName", storeName);
+          console.log("description", description);
+          console.log("content", content);
+          const store = await postTestAPI(storeName, description, content);
+
+          const storeTitle = store.title;
+          const storeDescription = store.description;
+          const storeContent = store.content;
+
+          await sleep(1000);
+
+          history.done([
+            ...history.get(),
+            {
+              role: "assistant",
+              content: `[Store Post = ${storeName}]`,
+            },
+          ]);
+
+          return (
+            <div>
+              <h1 className="text-[20px] font-bold">{storeTitle}</h1>
+              <p>{storeDescription}</p>
+              <p>{storeContent}</p>
+            </div>
+          );
         },
       },
     },

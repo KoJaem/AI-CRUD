@@ -14,18 +14,18 @@ export default function Page() {
 
   const submit = async (data: FieldValues) => {
     try {
-      if (!data.question) return;
+      if (!data.message) return;
 
       setMessages(currentMessages => [
         ...currentMessages,
         {
           id: Date.now(),
           role: "user",
-          display: <div>{data.question}</div>,
+          display: <div>{data.message}</div>,
         },
       ]);
 
-      const responseMessage = await sendMessage(data.question);
+      const responseMessage = await sendMessage(data.message);
 
       setMessages(currentMessages => [...currentMessages, responseMessage]);
     } catch (error) {
@@ -40,7 +40,7 @@ export default function Page() {
         ))}
       </ul>
       <form onSubmit={handleSubmit(submit)}>
-        <input type="text" {...register("question")} />
+        <input type="text" {...register("message")} />
         <button type="submit">Send</button>
       </form>
     </>
