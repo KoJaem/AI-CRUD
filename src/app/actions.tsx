@@ -8,7 +8,27 @@ import { z } from "zod";
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getTestAPI = async (storeName: string) => {
+const getTestListAPI = async () => {
+  await sleep(2000);
+  return [
+    {
+      id: 1,
+      title: "1번",
+      description: "1번 description",
+    },
+    {
+      id: 2,
+      title: "2번",
+      description: "2번 description",
+    },
+    {
+      id: 3,
+      title: "3번",
+      description: "3번 description",
+    },
+  ];
+};
+const getTestDetailAPI = async (storeName: string) => {
   // 여기서 API 호출하면 될듯함.
   await sleep(2000);
   return {
@@ -28,7 +48,9 @@ A message inside means a UI element or user event. For example:
 
 "[Store info = Walmart]" means that you want to show the user the information interface for Walmart.
 
-// If the user wants information about all stores, call \`getAllStore\` to display the information.
+"[Store List]" means that you want to display list data to provide users with overall store information.
+
+If the user wants information about all stores, call \`getAllStore\` to display the information.
 
 If the user wants detailed information about a particular store, call \`getDetailStore\` to display the details.
 If a user wants information that isn't related to your store, then tell them not to ask questions that aren't related to your store.
@@ -81,16 +103,48 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
       return <div>{content}</div>;
     },
     tools: {
+      getAllStore: {
+        description:
+          "Gets the store listing information. Use it to provide users with overall store information.",
+        parameters: z.object({}),
+        generate: async function* () {
+          yield <LoadingComponent />;
+
+          const list = await getTestListAPI();
+
+          await sleep(1000);
+
+          history.done([
+            ...history.get(),
+            {
+              role: "assistant",
+              content: `[Store List]`,
+            },
+          ]);
+
+          return (
+            <div>
+              {list.map(data => (
+                <div key={`store-${data.id}`} className="py-4">
+                  <h1 className="text-[20px] font-bold">{data.title}</h1>
+                  <p className="text-[20px] font-bold">{data.description}</p>
+                </div>
+              ))}
+            </div>
+          );
+        },
+      },
+
       getDetailStore: {
         description:
-          "Gets information about the given store. Use it to provide users with store information.",
+          "Gets information about the specific store. Use it to provide users with specific store information.",
         parameters: z.object({
           storeName: z.string().describe("The storeName is required."),
         }),
         generate: async function* ({ storeName }: { storeName: string }) {
           yield <LoadingComponent />;
 
-          const store = await getTestAPI(storeName);
+          const store = await getTestDetailAPI(storeName);
 
           const storeTitle = store.title;
           const storeDescription = store.description;
