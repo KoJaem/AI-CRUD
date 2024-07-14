@@ -5,57 +5,77 @@ import { CoreMessage, ToolInvocation } from "ai";
 import { createAI, getMutableAIState, streamUI } from "ai/rsc";
 import { ReactNode } from "react";
 import { z } from "zod";
+import {
+  createItem,
+  deleteItem,
+  getItem,
+  getItems,
+} from "./supabaseAuth/actions";
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getTestListAPI = async () => {
-  await sleep(2000);
-  return [
-    {
-      id: 1,
-      title: "1번",
-      description: "1번 description",
-    },
-    {
-      id: 2,
-      title: "2번",
-      description: "2번 description",
-    },
-    {
-      id: 3,
-      title: "3번",
-      description: "3번 description",
-    },
-  ];
+const getStoreListAPI = async () => {
+  try {
+    await sleep(2000);
+    const response = await getItems();
+    console.log("response list", response);
+
+    return response;
+  } catch (error) {
+    console.log(error);
+  }
 };
-const getTestDetailAPI = async (storeName: string) => {
-  // 여기서 API 호출하면 될듯함.
-  await sleep(2000);
-  return {
-    title: storeName,
-    description: `this is ${storeName} store description!!!`,
-  };
+const getStoreDetailAPI = async (storeName: string) => {
+  try {
+    await sleep(2000);
+    const response = await getItem(storeName);
+    console.log("response detail", response);
+    return Array.isArray(response) && response.length > 0
+      ? response[0]
+      : undefined;
+  } catch (error) {
+    console.log(error);
+  }
 };
 
-const postTestAPI = async (
+const postStoreAPI = async (
   storeName: string,
   description: string,
   content: string
 ) => {
-  await sleep(2000);
-  return {
-    title: storeName,
-    description: `${description}`,
-    content,
-  };
+  try {
+    await sleep(2000);
+    const response = await createItem(storeName, description, content);
+    console.log("response post", response);
+    return {
+      title: storeName,
+      description,
+      content,
+    };
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 // Todo 추 후 해당데이터가 있는지 확인 후 권한이 있는경우에 삭제 / 데이터가 없거나 권한이 없는경우 에러처리 해야함
-const deleteTestAPI = async (storeName: string) => {
-  await sleep(2000);
-  return {
-    title: storeName,
-  };
+const deleteStoreAPI = async (storeName: string) => {
+  try {
+    await sleep(2000);
+
+    const target = await getStoreDetailAPI(storeName);
+
+    console.log("target.id", target.id);
+
+    const response = await deleteItem(target.id);
+
+    console.log("response delete", response);
+
+    return {
+      title: storeName,
+    };
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const LoadingComponent = () => (
@@ -65,7 +85,7 @@ const LoadingComponent = () => (
 const content = `\
 You are a store information bot and you can help users find out details about stores.
 
-A message inside means a UI element or user event. For example:
+A message inside means a UI element or user event. Don't use this directly as an answer. For example:
 
 "[Store Info = KoJaemMart]" means that you want to show the user the information interface for KoJaemMart.
 
@@ -82,8 +102,6 @@ If the user wants detailed information about a particular store, call \`getDetai
 If the user wants to create a store, first, receive the values storeName, description, content from the user. and call \`postStore\` to create the store.
 
 If a user wants to delete a store, first, receive the storeName value from the user and call \`deleteStore\` to delete the store.
-
-If a user wants information that isn't related to your store, then tell them not to ask questions that aren't related to your store.
 
 In addition to getting store information, you can also chat with users.
 `;
@@ -125,10 +143,12 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
       ...history.get(),
     ] as CoreMessage[],
     initial: <LoadingComponent />,
-    text: ({ content, done }) => {
+    text: async ({ content, done }) => {
       if (done)
         history.done([...history.get(), { role: "assistant", content }]);
-
+      // tool 을 사용하지않고 텍스트를 반환하는 부분
+      await sleep(2000);
+      console.log("Tool is not used");
       return <div>{content}</div>;
     },
     tools: {
@@ -139,7 +159,7 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         generate: async function* () {
           yield <LoadingComponent />;
 
-          const list = await getTestListAPI();
+          const list = await getStoreListAPI();
 
           await sleep(1000);
 
@@ -153,7 +173,7 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
 
           return (
             <div>
-              {list.map(data => (
+              {list?.map(data => (
                 <div key={`store-${data.id}`} className="py-4">
                   <h1 className="text-[20px] font-bold">{data.title}</h1>
                   <p className="text-[20px] font-bold">{data.description}</p>
@@ -173,10 +193,10 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         generate: async function* ({ storeName }: { storeName: string }) {
           yield <LoadingComponent />;
 
-          const store = await getTestDetailAPI(storeName);
+          const store = await getStoreDetailAPI(storeName);
 
-          const storeTitle = store.title;
-          const storeDescription = store.description;
+          const storeTitle = store?.title;
+          const storeDescription = store?.description;
 
           await sleep(1000);
 
@@ -188,7 +208,17 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
             },
           ]);
 
-          return <div>{storeDescription}</div>;
+          return (
+            <div>
+              {store?.map(data => (
+                <div key={`store-${data.id}`} className="py-4">
+                  <h1 className="text-[20px] font-bold">{data.title}</h1>
+                  <p className="text-[20px] font-bold">{data.description}</p>
+                  <p className="text-[20px] font-bold">{data.content}</p>
+                </div>
+              ))}
+            </div>
+          );
         },
       },
 
@@ -213,7 +243,7 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         }) {
           yield <LoadingComponent />;
 
-          const store = await postTestAPI(storeName, description, content);
+          const store = await postStoreAPI(storeName, description, content);
 
           const storeTitle = store.title;
           const storeDescription = store.description;
@@ -247,9 +277,9 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         generate: async function* ({ storeName }: { storeName: string }) {
           yield <LoadingComponent />;
 
-          const store = await deleteTestAPI(storeName);
+          const store = await deleteStoreAPI(storeName);
 
-          const storeTitle = store.title;
+          const storeTitle = store?.title;
 
           await sleep(1000);
 
@@ -265,6 +295,7 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         },
       },
     },
+    toolChoice: "required",
     temperature: 0,
   });
 

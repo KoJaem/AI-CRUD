@@ -1,8 +1,8 @@
 import { revalidatePath } from "next/cache";
-import { createItem, deleteItem, getItem } from "./actions";
+import { createItem, deleteItem, getItems } from "./actions";
 
 export default async function TestSupabaseAuth() {
-  const data = await getItem();
+  const data = await getItems();
 
   async function handleCreate(formData: any) {
     "use server";
