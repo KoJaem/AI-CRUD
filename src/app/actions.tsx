@@ -133,7 +133,7 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
   ]);
 
   const reply = await streamUI({
-    model: openai("gpt-3.5-turbo"),
+    model: openai("gpt-4o-mini"),
     messages: [
       {
         role: "system",
