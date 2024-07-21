@@ -99,7 +99,8 @@ If the user wants information about all stores, call \`getAllStore\` to display 
 
 If the user wants detailed information about a particular store, call \`getDetailStore\` to display the details.
 
-If the user wants to create a store, first, receive the values storeName, description, content from the user. and call \`postStore\` to create the store.
+If the user wants to create a store, first, receive the values storeName, description, content from the user. 
+If the user hasn't provided the value you need, ask the user for it in a dialogue. You must use the values provided by the user. Don't create your own values without talking to the user. and call \`postStore\` to create the store.
 
 If a user wants to delete a store, first, receive the storeName value from the user and call \`deleteStore\` to delete the store.
 
@@ -295,7 +296,6 @@ export const sendMessage = async (message: string): Promise<ClientMessage> => {
         },
       },
     },
-    toolChoice: "required",
     temperature: 0,
   });
 
